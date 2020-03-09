@@ -10,3 +10,7 @@ inspired by lolcat
   After install, run: 
   
   *loldog -h*
+
+# Example
+  loldog -l loldog.c LICENSE
+    -> cat loldog.c and LICENSE on the screen with color-pattern=line
