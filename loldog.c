@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #define MAXLEN      10000
+#define MAXFILE     20
 
 #define MODE(x)     x == 0 ?  (17+(rand() % 239)) : \
                     x == 1 ?  (17+(mode_idx++ % 215)) : \
@@ -32,7 +33,7 @@ void info()
             "\x1b[%d;38;5;%dm"
             "\t-d/D/letter:    changing color letter-accordingly\n"
             "\x1b[%d;38;5;%dm"
-            "\t-nb/NB/nobold:  Disable default bolding\n", 1,MODE(2),1,MODE(2),1,MODE(2),1,MODE(2),1,MODE(2),1,MODE(2),1,MODE(2));
+            "\t-nb/NB/nobold:  Disable default bolding\n", 1,MODE(0),1,MODE(0),1,MODE(0),1,MODE(0),1,MODE(0),1,MODE(0),1,MODE(0));
 
     printf( "\x1b[%d;38;5;%dm"
             "-Only choose one out of the following:\n"
@@ -43,15 +44,17 @@ void info()
             "\x1b[%d;38;5;%dm"
             "\t-r/R/rainbow:   changing color with rainbow pattern\n\n"
             "\x1b[%d;38;5;%dm"
-            "-END\n", 1, MODE(2),1,MODE(2),1,MODE(2),1,MODE(2),1,MODE(2)); 
+            "-END\n", 1, MODE(0),1,MODE(0),1,MODE(0),1,MODE(0),1,MODE(0)); 
 }
 
 
 main(int argc, char **argv)
 {
-    unsigned bold = 1, mode = 0, line = 0, word = 0, letter = 0, i;
-    char *input = malloc(sizeof(*input) * MAXLEN), *token = malloc(sizeof(*input)), *ptr;
-    FILE *file = stdin;
+    unsigned bold = 1, color_mode= 0, line = 0, word = 0, letter = 0, i;
+    char input[MAXLEN];
+    char *token = (char *)malloc(sizeof(*token)*MAXLEN), *letterptr;
+    FILE *file[MAXFILE];
+    int fileidx = 0, filectn = 0;
     srand(time(NULL));
     
     for (i = 1; i < argc; ++i)
@@ -71,42 +74,51 @@ main(int argc, char **argv)
         else if (!strcmp(argv[i], "-nb") || !strcmp(argv[i], "-NB") || !strcmp(argv[i], "-nobold"))
             bold = 0;
         else if (!strcmp(argv[i], "-g") || !strcmp(argv[i], "-G") || !strcmp(argv[i], "-gradual"))
-            mode = 1;
+            color_mode = 1;
         else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "-R") || !strcmp(argv[i], "-rainbow"))
-            mode = 2;
+            color_mode = 2;
         else {
-            file = fopen(argv[i], "r");
-            if (!file) {
+            file[filectn] = fopen(argv[i], "r");
+            if (file[filectn] == NULL) {
                 printf("file: %s cannot be opened...\n", argv[i]);
                 exit(EXIT_FAILURE);
+            } else {
+                printf("file: %s added\n", argv[i]);
+                ++filectn;
             }
         }
 
     }
-    assert((line+word+letter) == 1);
+    if((line+word+letter) > 1) {
+        info();
+        exit(EXIT_FAILURE);
+    } else
+        line = 1;
 
-    if (argc == -1){}
-        /*file();*/
-    else {
-        while (fgets(input, MAXLEN, file)) {
+    if (filectn == 0)
+        file[filectn++] = stdin;
+    
+    while (fileidx < filectn) {
+        while (fgets(input, MAXLEN, file[fileidx])) {
             strtok(input, "\n");
             if (line) {
-                printf("\x1b[%d;38;5;%dm%s", bold, MODE(mode), input);
+                printf("\x1b[%d;38;5;%dm%s", bold, MODE(color_mode), input);
                 printf(ANSI_UNSET"\n");
             } else if (word) {
                 token = strtok(input, " ");
                 do {
-                    printf("\x1b[%d;38;5;%dm%s", bold, MODE(mode), token);
+                    printf("\x1b[%d;38;5;%dm%s", bold, MODE(color_mode), token);
                     printf(ANSI_UNSET" ");
                 } while (token = strtok(NULL, " \n"));
                 printf(ANSI_UNSET"\n");
             } else {
-                ptr = input;
-                while (*ptr != '\0')
-                    printf("\x1b[%d;38;5;%dm%c", bold, MODE(mode), *ptr++);
+                letterptr = input;
+                while (*letterptr != '\0')
+                    printf("\x1b[%d;38;5;%dm%c", bold, MODE(color_mode), *letterptr++);
                 printf(ANSI_UNSET"\n");
             }
         }
+        ++fileidx;
     }
    return 0;
 }
